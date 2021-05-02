@@ -1,0 +1,15 @@
+{
+    "load": {
+        "dataset": "preprocessed_dataset_wfoodb.csv",
+        "mols": "Smiles",
+        "labels_fields": "Class",
+        "id_field": "ID"
+    },
+    "featurizer": "Morgan",
+    "models": [
+        {"name": "RandomForestClassifier", "params": {"n_estimators": 10,
+                                                      "criterion": "entropy"}},
+        {"name": "SVM", "params": {"C":0.9}}
+    ],
+    "metrics": ["roc_auc_score", "precision_score", "accuracy_score"]
+}
