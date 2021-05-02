@@ -53,6 +53,8 @@ Este repositório apenas contém o **código desenvolvido pelo grupo**, e não c
 ## **Nota:**
 Quando no lugar de um parâmetro aparece uma lista, executa-se a otimização dos parâmetros do modelo.
 
+[Notebook](https://github.com/dpereira7/AA2_TP/blob/main/AutoML.ipynb)
+
 ```python
 from autoML.AutoML import AutoML
 
@@ -60,4 +62,4 @@ auto_ml = AutoML('teste.json')
 auto_ml.execute()
 ```
 
-[Notebook](https://github.com/dpereira7/AA2_TP/blob/main/AutoML.ipynb)
+
