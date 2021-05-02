@@ -27,7 +27,7 @@ Este repositório apenas contém o **código desenvolvido pelo grupo**, e não c
 
 ## Formato dos Ficheiros de Input
 
-```json
+```yaml
 {
     "load": {
         "dataset": "preprocessed_dataset_wfoodb.csv",
@@ -60,4 +60,4 @@ auto_ml = AutoML('teste.json')
 auto_ml.execute()
 ```
 
-[Notebook]()
+[Notebook](https://github.com/dpereira7/AA2_TP/blob/main/AutoML.ipynb)
