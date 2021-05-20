@@ -1,4 +1,3 @@
-# DeepMol
 # User Input - Documentation
 
 ## Loading a Dataset
