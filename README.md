@@ -20,10 +20,16 @@ Este repositório apenas contém o **código desenvolvido pelo grupo**, e não c
 - Definição de parâmetros dos Modelos e de featurization
 - Definição de Métricas de comparação de Modelos
 - Otimização de Modelos
+- Geração de output
 
 ### Modelos Suportados
 - RandomForestClassifier
-- SVM
+- C-Support Vector Classification
+- KNeighborClassifier
+- DecisionTreeClassifier
+- RidgeClassifier
+- SGDClassifier
+- AdaBoostClassifier
 
 ## Formato dos Ficheiros de Input
 
@@ -52,6 +58,14 @@ Este repositório apenas contém o **código desenvolvido pelo grupo**, e não c
 ``` 
 ## **Nota:**
 Quando no lugar de um parâmetro aparece uma lista, executa-se a otimização dos parâmetros do modelo.
+
+## Formato dos Ficheiros de Output
+```csv
+Model ; roc_auc_score ; precision_score ; accuracy_score
+KNeighborsClassifier() ; 0.7000689698304766 ; 0.3644859813084112 ; 0.9250429553264605
+SVC(C=0.9) ; 0.5877862595419847 ; 1.0 ; 0.9536082474226805
+DecisionTreeClassifier(criterion='entropy', max_depth=15) ; 0.6484970831147262 ; 0.48823529411764705 ; 0.9428694158075601
+```
 
 [Notebook](https://github.com/dpereira7/AA2_TP/blob/main/AutoML.ipynb)
 
