@@ -1,3 +1,4 @@
+from autoML.ModelBuilderOptimization import ModelBuilderOptimization
 from parameterOptimization.HyperparameterOpt import GridHyperparamOpt
 from splitters.splitters import SingletaskStratifiedSplitter
 from metrics.Metrics import Metric
@@ -5,7 +6,6 @@ from metrics.metricsFunctions import roc_auc_score, precision_score, accuracy_sc
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from models.sklearnModels import SklearnModel
-from autoML.default_params import rf_model_builder as rfmb
 
 class OptimizationSelector(object):
 
@@ -26,17 +26,25 @@ class OptimizationSelector(object):
 
     def select_models(self):
         best_models = []
+        best_params = []
+        all = []
         for opt_model in self.models:
-            best = self.select_best(opt_model)
+            best,params, results = self.select_best(opt_model)
             best_models.append(best)
-        return best_models
+            best_params.append(params)
+            all.append(results)
+
+        return best_models, all
 
     def select_best(self, opt_model):
 
-        optimizer = GridHyperparamOpt(rfmb)
+        builderOptimizer = ModelBuilderOptimization()
+        model = builderOptimizer.get_model(opt_model)
+
+        optimizer = GridHyperparamOpt(model)
         best_model, best_hyperparams, all_results = optimizer.hyperparam_search(
             opt_model['params'],
             self.partitioned_dataset[0],
             self.partitioned_dataset[1],
             Metric(roc_auc_score))
-        return best_model
+        return best_model, best_hyperparams, all_results

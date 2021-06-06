@@ -1,10 +1,14 @@
 import json
+from os import linesep, write
+
+from numpy import info
 from loaders.Loaders import CSVLoader
 from compoundFeaturization.rdkitFingerprints import MorganFingerprint
 from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from autoML.ModelBuilder import ModelBuilder
 from metrics.Metrics import Metric
+from models.sklearnModels import SklearnModel
 from splitters.splitters import SingletaskStratifiedSplitter
 from metrics.metricsFunctions import roc_auc_score, precision_score, accuracy_score, confusion_matrix, classification_report
 from autoML.OptimizationSelector import OptimizationSelector
@@ -55,11 +59,13 @@ class AutoML(object):
 
 
     def parse_featurizer(self):
-        featurizer_info = {
-            'name': self.file_data['featurizer']['name'],
-            'type': self.file_data['featurizer']['type'],
-            'params': self.file_data['featurizer']['params']
-        }
+        featurizer_info = []
+        for featurizer in self.file_data['featurizers']:
+            info = {}
+            info['name'] = featurizer['name']
+            info['type'] = featurizer['type']
+            info['params'] = featurizer['params']
+            featurizer_info.append(info)
         return featurizer_info
 
 
@@ -103,11 +109,29 @@ class AutoML(object):
             initialized_metrics.append(Metric(metric_to_insert))
         return initialized_metrics
 
+    def output2csvFormat(self, models, featurizer, list_scores, fst):
+        line = ""
+        for i in range(len(models)):
+            line = str(models[i].model)
+            line += ' ; ' + featurizer
+            for score in list_scores[i]:
+                line += ' ; ' + str(score)
+            line += '\n'
+        fst_line = ""
+        if(fst):
+            fst_line = 'Model ; Featurizer'
+            for metric in self.info['metrics']:
+                fst_line += ' ; ' + metric.name
+            fst_line += ' \n'
+        line = fst_line + line
+        
+        return line
 
     def execute(self):
 
         li = self.info['load_info']
-
+        lines = []
+        fst = True
         dataset = CSVLoader(
             dataset_path=li['dataset'],
             mols_field=li['mols'], 
@@ -118,36 +142,68 @@ class AutoML(object):
             shard_size=li['shard_size'])
         dataset = dataset.create_dataset()
         featurizer = Featurizer(self.info['featurizer_info'])
-        dataset = featurizer.fingerprint(dataset)
-        print(dataset.get_shape())
+        allinfo = []
+        for featurizer_info in self.info['featurizer_info']:
+            featurizer = Featurizer(featurizer_info)
+            dataset = featurizer.fingerprint(dataset)
+            #print(dataset.get_shape()
 
+            #Data Split
+            splitter = SingletaskStratifiedSplitter()
+            train_dataset, valid_dataset, test_dataset = \
+                splitter.train_valid_test_split(dataset=dataset, 
+                                                frac_train=0.6, 
+                                                frac_valid=0.2, 
+                                                frac_test=0.2)
 
-        #Data Split
-        splitter = SingletaskStratifiedSplitter()
-        train_dataset, valid_dataset, test_dataset = \
-            splitter.train_valid_test_split(dataset=dataset, 
-                                            frac_train=0.6, 
-                                            frac_valid=0.2, 
-                                            frac_test=0.2)
+            normal_models = []
+            models_to_optimize = []
+            
+            for model in self.info['models_info']:
+                if model['type'] == 'opt':
+                    models_to_optimize.append(model)
+                else:
+                    normal_models.append(model)
 
-        normal_models = []
-        models_to_optimize = []
+            optimization_selector = OptimizationSelector(models_to_optimize, dataset)
+            best_opt_models, results = optimization_selector.select_models()
+
+            model_builder = ModelBuilder(normal_models)
+            models = model_builder.return_initialized_models()
+            models.extend(best_opt_models)
+            
+            print("RESULTS \n\n")
+            for result in results:
+                print(type(result))
+            print("RESULTS \n\n")
+
+            #print(models)
+            infoline = {"featurizer" : featurizer_info['name'] }
+            modelscores = []
+            for model in models:
+                model.fit(train_dataset)
+                scores = model.evaluate(valid_dataset, metrics=self.info['metrics'])
+                tuplo = (str(model.model), scores.values())
+                modelscores.append(tuplo)
+            infoline['scores'] = modelscores
+
+            allinfo.append(infoline)
         
-        for model in self.info['models_info']:
-            if model['type'] == 'opt':
-                models_to_optimize.append(model)
-            else:
-                normal_models.append(model)
+        print(allinfo)
+        
+        with open("output.csv",'w') as output:
+            fst_line = "Model ; Featurizer"
+            for metric in self.info['metrics']:
+                fst_line += ' ; ' + metric.name
+            fst_line += ' \n'
+            output.write(fst_line)
 
-        optimization_selector = OptimizationSelector(models_to_optimize, dataset)
-        best_opt_models = optimization_selector.select_models()
-
-        model_builder = ModelBuilder(normal_models)
-        models = model_builder.return_initialized_models()
-        models.extend(best_opt_models)
-        print(models)
-
-        for model in models:
-            model.fit(train_dataset)
-            scores = model.evaluate(valid_dataset, metrics=self.info['metrics'])
-            print(scores)
+            for info in allinfo:
+                for tuplo in info['scores']:
+                    model,scores = tuplo
+                    line = model + "; " + info['featurizer']
+                    for score in scores:
+                        line += "; " + str(score)
+                    line += '\n'
+                    output.write(line)
+                
